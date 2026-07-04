@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPL Emergency Dept. Management — Interactive Decision Tool</title>
+<style>
+  :root {
+    --purple: #4b2d7f;
+    --purple-dark: #3a2263;
+    --purple-light: #ece5f6;
+    --blue: #2a7de1;
+    --gray-bg: #f5f4f7;
+    --border: #d8d3e2;
+    --red: #b3261e;
+    --green: #1f7a3d;
+    --text: #2b2b33;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--gray-bg); color: var(--text); line-height: 1.5;
+  }
+  header {
+    background: var(--purple); color: #fff; padding: 18px 20px;
+  }
+  header .brand { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.85; }
+  header h1 { margin: 4px 0 2px; font-size: 20px; font-weight: 700; }
+  header .sub { font-size: 13px; opacity: 0.85; }
+  main { max-width: 720px; margin: 0 auto; padding: 16px 16px 60px; }
+  .disclaimer {
+    font-size: 12px; color: #5c5768; background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;
+  }
+  .crumbs { font-size: 12.5px; color: #6b6478; margin: 0 0 12px; }
+  .crumbs span { background: #fff; border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; margin: 0 6px 6px 0; display: inline-block; }
+  .card {
+    background: #fff; border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; box-shadow: 0 1px 3px rgba(40,20,80,0.06);
+  }
+  .card h2 { margin: 0 0 6px; font-size: 18px; color: var(--purple-dark); }
+  .card .body { font-size: 14.5px; }
+  .card .body ul { padding-left: 20px; margin: 8px 0; }
+  .card .body li { margin: 4px 0; }
+  details {
+    border: 1px solid var(--border); border-radius: 8px; margin: 10px 0; background: #faf9fc;
+  }
+  details summary {
+    cursor: pointer; padding: 10px 14px; font-weight: 600; font-size: 14px; color: var(--purple-dark);
+    user-select: none;
+  }
+  details[open] summary { border-bottom: 1px solid var(--border); }
+  details .inner { padding: 10px 16px; font-size: 14px; }
+  details .inner ul { padding-left: 18px; margin: 6px 0; }
+  .options { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+  button.opt {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    background: var(--purple); color: #fff; border: none; border-radius: 10px;
+    padding: 13px 16px; font-size: 15px; font-weight: 600; font-family: inherit;
+  }
+  button.opt:hover { background: var(--purple-dark); }
+  button.opt.secondary { background: #fff; color: var(--purple-dark); border: 2px solid var(--purple); }
+  button.opt.secondary:hover { background: var(--purple-light); }
+  button.opt.danger { background: var(--red); }
+  button.opt .optnote { display: block; font-weight: 400; font-size: 12.5px; opacity: 0.9; margin-top: 2px; }
+  .pathcards { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
+  @media (min-width: 640px) { .pathcards { grid-template-columns: repeat(3, 1fr); } }
+  .pathcard {
+    border: 2px solid var(--border); border-radius: 10px; padding: 14px; background: #faf9fc;
+    display: flex; flex-direction: column; font-size: 13px;
+  }
+  .pathcard h3 { margin: 0 0 2px; font-size: 15px; color: var(--purple-dark); }
+  .pathcard .eff { font-weight: 700; color: var(--green); font-size: 12.5px; margin-bottom: 6px; }
+  .pathcard .procon { flex: 1; }
+  .pathcard button { margin-top: 10px; }
+  .endpoint-banner {
+    border-radius: 10px; padding: 12px 16px; font-weight: 700; font-size: 15px; margin-bottom: 14px; color: #fff;
+    background: var(--purple);
+  }
+  .endpoint-banner.urgent { background: var(--red); }
+  .orders {
+    background: #f4f1fa; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; font-size: 13.5px; white-space: pre-wrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 10px 0;
+  }
+  .copybtn {
+    cursor: pointer; background: var(--blue); color: #fff; border: none; border-radius: 8px;
+    padding: 9px 16px; font-size: 14px; font-weight: 600; font-family: inherit;
+  }
+  .copybtn.copied { background: var(--green); }
+  .nav { margin-top: 18px; display: flex; gap: 10px; }
+  .nav button {
+    cursor: pointer; background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 16px; font-size: 13.5px; font-family: inherit; color: #524b63;
+  }
+  .nav button:hover { background: var(--purple-light); }
+  .hotline {
+    margin-top: 20px; background: #e8f1fc; border: 1px solid #bcd6f5; border-radius: 10px;
+    padding: 12px 16px; font-size: 13.5px; text-align: center;
+  }
+  .hotline strong { color: var(--blue); }
+  footer { max-width: 720px; margin: 0 auto; padding: 0 16px 40px; font-size: 11.5px; color: #6b6478; }
+  .warnbox {
+    background: #fdecea; border: 1px solid #f2b8b5; border-radius: 8px; padding: 10px 14px;
+    font-size: 13.5px; margin: 10px 0;
+  }
+  .notebox {
+    background: #fff8e1; border: 1px solid #eadfa5; border-radius: 8px; padding: 10px 14px;
+    font-size: 13.5px; margin: 10px 0;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Access Bridge</div>
+  <h1>Early Pregnancy Loss (EPL): Emergency Dept. Management</h1>
+  <div class="sub">Interactive clinical decision support &middot; Based on the April 2026 Access Bridge protocol &middot; For settings where mifepristone is available</div>
+</header>
+<main>
+  <div class="disclaimer">
+    This tool disseminates resources developed by an interdisciplinary team based on published evidence and medical expertise.
+    It is <strong>not a substitute for clinical judgment or medical advice</strong>. Current best practices may change.
+    Providers are responsible for assessing the care and needs of individual patients.
+  </div>
+  <div class="crumbs" id="crumbs"></div>
+  <div class="card" id="card"></div>
+  <div class="nav">
+    <button id="backbtn" onclick="goBack()">&#8592; Back</button>
+    <button onclick="restart()">&#8635; Start over</button>
+  </div>
+  <div class="hotline">
+    <strong>The Reproductive Health Hotline</strong> — 1-844-REPROHH (1-844-737-7644)<br>
+    Free, confidential, nationwide, evidence-based hotline for health care providers.
+  </div>
+  <details style="margin-top:16px; background:#fff;">
+    <summary>References &amp; endnotes</summary>
+    <div class="inner">
+      <ol style="padding-left:18px; font-size:12.5px;">
+        <li>ACOG and Society of Family Planning recommend use of mifepristone for EPL, if available. The addition of mifepristone to misoprostol increases success rates and decreases time to completion in patients with missed EPL and anembryonic pregnancies.</li>
+        <li>61% overall (71% for incomplete EPL, 53% for empty sac, 35% for missed EPL). Casikar 2010.</li>
+        <li>See Sonalkar 2020 and Schreiber 2018. Zhang 2005 found a 93% success rate with incomplete EPL using misoprostol-only.</li>
+        <li>Prescribers and pharmacies must be REMS-certified; one prescriber can register for the group. See REMS 101. To find certified pharmacies stocking mifepristone and misoprostol: earlyoptionpill.com or genbiopro.com/prescribing.</li>
+        <li>Timing of misoprostol should be determined by patient preference; many patients prefer to take it at home with easy access to a toilet. 2024 SFP EPL guidelines.</li>
+        <li>Criteria based on ACOG guidelines. Updated criteria allow earlier diagnosis: CRL &ge;5.3 mm, empty GS of 21 mm, and/or hCG rise &lt;11% over baseline after 48 h (after US showing IUP of uncertain viability) are 100% diagnostic of nonviable pregnancy. 2024 SFP guidelines.</li>
+        <li>Rh testing and RhoGAM are not recommended before 12 weeks' gestation for EPL and medical or procedural abortion (ACOG 2024, SFP 2022). No changes to ectopic pregnancy recommendations. Follow institutional guidance.</li>
+        <li>Immediate IUD removal in pregnancy is standard of care. The IUD must be removed before giving mifepristone and misoprostol; if the patient chooses a procedure, it may be removed at the time of the procedure. ACOG Committee Opinion #672 (2016).</li>
+        <li>ACOG recommends following hCGs until negative with PULs; use shared decision-making. ACOG Practice Bulletin #193.</li>
+        <li>Rates of surgical procedure after expectant management vary widely; mean across studies 28%. Nanda 2012 (Cochrane).</li>
+      </ol>
+      <p style="font-size:12px;">Key references: Schreiber NEJM 2018; Sonalkar AJOG 2020; Zhang NEJM 2005; Casikar UOG 2010; Nanda Cochrane 2012; ACOG PB #193 &amp; #200; SFP Clinical Recommendation 2024; Horvath Contraception 2022.</p>
+    </div>
+  </details>
+</main>
+<footer>
+  &copy; 2026 Public Health Institute. Content available under CC BY-NC-ND 4.0.
+  Access Bridge is a program of the Public Health Institute's Bridge Center.
+  For additional resources visit <a href="https://bridgetotreatment.org/access-bridge/">bridgetotreatment.org/access-bridge</a>.
+</footer>
+<script>
+/* ---------- shared content blocks ---------- */
+
+const COUNSELING = `
+<details><summary>Helpful patient counseling</summary><div class="inner"><ul>
+<li><strong>EPL is not your fault</strong> — not caused by stress, activity, sex, drugs, food, or anything else you did or didn't do.</li>
+<li>EPL management does not affect future fertility.</li>
+<li>Misoprostol can be used buccally or vaginally, even though pharmacy paperwork only mentions the buccal route.</li>
+<li>Buccal misoprostol: hold between cheek and gums for 30 minutes, then swish with liquid and swallow.</li>
+<li>Misoprostol commonly causes fever/chills, nausea/vomiting/diarrhea, pelvic pain/cramping, vaginal bleeding.</li>
+<li>RhoGAM is <strong>not recommended</strong> for pregnancies &lt;12 weeks, regardless of Rh status.</li>
+</ul></div></details>`;
+
+const DISCHARGE = `
+<details><summary>Standard discharge instructions</summary><div class="inner"><ul>
+<li>Can start contraception anytime. IUD may be placed after confirming no longer pregnant.</li>
+<li><strong>Confirmed IUP:</strong> no formal follow-up required; recommend home pregnancy test 5 weeks later to confirm completion (urine test can stay positive up to 5 weeks).</li>
+<li><strong>PUL (no ultrasound-confirmed IUP):</strong> follow serial hCGs every 2&ndash;7 days until negative, or refer to OB/GYN (shared decision-making).</li>
+<li>Follow up if pregnancy symptoms persist after a week, home pregnancy test still positive at 5 weeks, or earlier confirmation is desired.</li>
+</ul>
+<p><strong>Urgent re-evaluation if:</strong></p><ul>
+<li>Unilateral pain (ultrasound to rule out ectopic)</li>
+<li>Severe abdominal pain</li>
+<li>Excessive bleeding (heavier than a regular period) not improving with misoprostol</li>
+<li>Fever &gt;100.4&deg;F for more than 4 hours</li>
+<li>Feeling ill or any concerning symptoms, such as syncope</li>
+</ul></div></details>`;
+
+const POSTTX = `
+<details><summary>Post-treatment notes (if patient re-presents)</summary><div class="inner"><ul>
+<li>Routine follow-up ultrasound not needed.</li>
+<li>If follow-up US done: "uterine debris" is a normal finding. Intervene only if retained products of conception (RPOC) are present <em>and</em> the patient is symptomatic (bleeding &gt;2 pads/hour or persistent pain).</li>
+<li>If heavy bleeding or significant pain: 2&ndash;4 misoprostol tablets can help the uterus evacuate retained tissue and slow bleeding. If no improvement after 1&ndash;2 hours, consult GYN.</li>
+<li>Asymptomatic RPOC: expectant management may be appropriate.</li>
+<li>hCG can remain positive for up to 5 weeks.</li>
+</ul></div></details>`;
+
+const SYMPTOM_RX = `Prescribe ibuprofen 400 mg tablets, dispense #30
+  - Take 1 tablet by mouth as needed for pain every 6 hours
+Prescribe acetaminophen 500 mg, dispense #60
+  - Take 2 tablets by mouth as needed for pain every 6 hours
+Prescribe ondansetron 4 mg ODT, dispense #15
+  - Take 1 tablet by mouth as needed for nausea every 6 hours`;
+
+const MED_RX = `Give or prescribe mifepristone 200 mg tablet by mouth (REMS-certified prescriber/pharmacy required)
+
+Prescribe misoprostol 200 mcg tablets, dispense #8
+  - Place 4 tablets (800 mcg) buccally or vaginally 7-48 hours after taking mifepristone; may use sooner if heavy bleeding
+  - Use an additional 4 tablets (800 mcg) buccally or vaginally as needed if no bleeding after 4-24 hours, or buccally if bleeding 2 pads or more per hour for 2 hours (seek medical care if bleeding does not decrease within an hour)
+
+` + SYMPTOM_RX;
+
+/* ---------- step definitions ---------- */
+
+const steps = {
+
+  start: {
+    crumb: "EPL criteria",
+    title: "Does the patient meet criteria for early pregnancy loss (nonviable pregnancy)?",
+    body: `
+      <details open><summary>Definitive confirmation of nonviable pregnancy</summary><div class="inner"><ul>
+        <li>hCG falls, or rises &lt;11% over 48 hours, if initial US showed IUP</li>
+        <li>No pregnancy on ultrasound, and visible fetus passed by patient report or on physical exam</li>
+        <li><strong>By transvaginal ultrasound (TVUS):</strong><ul>
+          <li>CRL &ge;7 mm with no fetal cardiac activity (FCA)</li>
+          <li>Mean sac diameter &ge;25 mm with no embryo</li>
+          <li>Absence of embryo with cardiac activity &ge;2 weeks after TVUS with empty gestational sac, or &ge;11 days after TVUS showing gestational sac with yolk sac</li>
+          <li>Prior TVUS demonstrating FCA with current TVUS showing no FCA or no embryo</li>
+        </ul></li>
+      </ul></div></details>
+      <details><summary>Probable nonviable pregnancy by TVUS</summary><div class="inner"><ul>
+        <li>CRL &lt;7 mm with no FCA</li>
+        <li>Mean sac diameter 16&ndash;24 mm with no embryo</li>
+        <li>Absence of embryo with FCA 7&ndash;13 days after US shows gestational sac</li>
+        <li>Absence of embryo with FCA 7&ndash;10 days after US shows gestational sac with yolk sac</li>
+        <li>Absence of embryo &ge;6 weeks after first day of LMP (if sure of dates, normal cycles, not on hormonal contraception or breastfeeding)</li>
+        <li>Empty sac seen adjacent to yolk sac with no embryo</li>
+        <li>Yolk sac &gt;7 mm</li>
+        <li>&lt;5 mm difference between mean sac diameter and CRL</li>
+      </ul></div></details>`,
+    options: [
+      { label: "Yes — criteria met (definitive or probable)", next: "ga" },
+      { label: "No / uncertain viability", next: "notepl", cls: "secondary" }
+    ]
+  },
+
+  notepl: {
+    crumb: "Protocol not applicable",
+    endpoint: true,
+    banner: "This protocol does not apply",
+    body: `<p>This pathway is for confirmed or probable nonviable pregnancy under 12 weeks. If viability is uncertain or pregnancy location is unknown:</p><ul>
+      <li>Evaluate for ectopic pregnancy as clinically indicated.</li>
+      <li>For pregnancy of unknown location (PUL) or uncertain viability, consider serial hCGs every 2&ndash;7 days and/or repeat ultrasound, with OB/GYN follow-up.</li>
+      <li>Note: after an ultrasound showing IUP of uncertain viability, an hCG rise &lt;11% over 48 hours is 100% diagnostic of nonviable pregnancy (2024 SFP guidelines) — recheck and return to this tool if diagnosis is confirmed.</li>
+    </ul>`
+  },
+
+  ga: {
+    crumb: "Gestational age",
+    title: "Is the pregnancy less than 12 weeks by ultrasound?",
+    options: [
+      { label: "Yes — less than 12 weeks", next: "bleeding" },
+      { label: "No — 12 weeks or greater", next: "consultgyn", cls: "secondary" }
+    ]
+  },
+
+  consultgyn: {
+    crumb: "≥12 weeks",
+    endpoint: true,
+    banner: "12 weeks or greater: Consult GYN",
+    body: `<p>This ED protocol applies to early pregnancy loss under 12 weeks by ultrasound. For 12 weeks or greater, consult GYN for management.</p>`
+  },
+
+  bleeding: {
+    crumb: "Bleeding triage",
+    title: "Current heavy bleeding? (2 pads/hour or more)",
+    options: [
+      { label: "YES — heavy bleeding", next: "emergent", cls: "danger" },
+      { label: "NO", next: "sdm" }
+    ]
+  },
+
+  emergent: {
+    crumb: "Emergent",
+    endpoint: true,
+    urgent: true,
+    banner: "Emergent GYN consult",
+    body: `<ul>
+      <li><strong>Place misoprostol 800 mcg (4 tablets) buccally while waiting</strong> for GYN.</li>
+      <li>Offer pain medications.</li>
+    </ul>`,
+    orders: `Emergent GYN consult
+Misoprostol 800 mcg (4 x 200 mcg tablets) buccally now, while awaiting GYN
+Offer pain medications`,
+    extras: COUNSELING + POSTTX
+  },
+
+  sdm: {
+    crumb: "Shared decision making",
+    title: "Shared decision making: choose a management pathway with the patient",
+    body: `<p>All three options are safe and reasonable. Choice should reflect the patient's preferences and values.</p>`,
+    pathcards: [
+      {
+        name: "Expectant Management",
+        sub: "No intervention",
+        eff: "61% effective by 14 days",
+        pros: "Inexpensive; happens outside of the ED.",
+        cons: "Persistent cramping and bleeding for weeks; 28% require a procedure; resolution can take 8 weeks.",
+        next: "expectant"
+      },
+      {
+        name: "Medication Management",
+        sub: "Mifepristone with misoprostol",
+        eff: "84–93% effective by 8 days",
+        pros: "Inexpensive; happens outside of the ED; quicker resolution than expectant management; fewer return ED visits.",
+        cons: "Short-lived cramping and bleeding; misoprostol side effects; low percentage require a surgical procedure.",
+        next: "contra"
+      },
+      {
+        name: "Procedural Management",
+        sub: "Uterine aspiration",
+        eff: "Almost 100% effective same day",
+        pros: "Fastest resolution of symptoms; fewest return visits; least bleeding or cramping.",
+        cons: "More time-intensive; requires procedural space; risk of procedural complications; expensive.",
+        next: "procedural"
+      }
+    ]
+  },
+
+  expectant: {
+    crumb: "Expectant",
+    endpoint: true,
+    banner: "Expectant management (no intervention)",
+    body: `<p>Offer symptom management and discharge with standard instructions.</p>`,
+    orders: SYMPTOM_RX,
+    extras: COUNSELING + DISCHARGE + POSTTX
+  },
+
+  contra: {
+    crumb: "Contraindication screen",
+    title: "Any contraindications to the mifepristone/misoprostol protocol?",
+    body: `<ul>
+      <li>Allergy to mifepristone or misoprostol</li>
+      <li>Porphyria</li>
+      <li>Chronic adrenal failure</li>
+      <li>Chronic systemic steroids (inhalers/sprays/creams OK)</li>
+      <li>Severe symptomatic anemia (hemoglobin not required if asymptomatic)</li>
+      <li>Known coagulopathy or current anticoagulant therapy (aspirin OK)</li>
+      <li>IUD in place</li>
+    </ul>`,
+    options: [
+      { label: "No contraindications", next: "medication" },
+      { label: "IUD in place (only)", note: "IUD must be removed before mifepristone/misoprostol", next: "iud", cls: "secondary" },
+      { label: "Other contraindication present", next: "contraindicated", cls: "secondary" }
+    ]
+  },
+
+  iud: {
+    crumb: "IUD removal",
+    title: "Remove the IUD before medication management",
+    body: `<div class="notebox">The IUD <strong>must be removed</strong> before giving mifepristone and misoprostol. If the string is visible in the os, IUDs can be removed easily with ring forceps during a speculum exam. If the patient instead chooses a procedure, the IUD can be removed at the time of the procedure.</div>`,
+    options: [
+      { label: "IUD removed — proceed with medication management", next: "medication" },
+      { label: "Unable to remove / patient prefers another option", next: "sdm", cls: "secondary" }
+    ]
+  },
+
+  contraindicated: {
+    crumb: "Contraindicated",
+    endpoint: true,
+    banner: "Mifepristone/misoprostol contraindicated",
+    body: `<p>Medication management is contraindicated. Return to shared decision making and offer:</p><ul>
+      <li><strong>Expectant management</strong> (61% effective by 14 days), or</li>
+      <li><strong>Procedural management</strong> (uterine aspiration, almost 100% effective same day).</li>
+    </ul>
+    <div class="options">
+      <button class="opt" onclick="go('sdm')">&#8592; Return to shared decision making</button>
+    </div>`
+  },
+
+  medication: {
+    crumb: "Medication",
+    endpoint: true,
+    banner: "Medication management: mifepristone + misoprostol",
+    body: `
+      <div class="notebox"><strong>REMS:</strong> Prescribers and pharmacies must be REMS-certified; one prescriber can register for the group. Prescribing to a registered outpatient pharmacy is an option. Dispense from the ED if possible.</div>
+      <p><strong>Step 1 — Give or prescribe mifepristone 200 mg tablet by mouth</strong> (see mifepristone medication guide).</p>
+      <p><strong>Step 2 — Discharge prescriptions</strong> (dispense from ED if possible):</p>
+      <ul>
+        <li><strong>Misoprostol 200 mcg tablets, #8:</strong> place 4 tablets (800 mcg) buccally or vaginally 7&ndash;48 hours after mifepristone; may use sooner if heavy bleeding. Use an additional 4 tablets buccally or vaginally as needed if no bleeding after 4&ndash;24 hours, or buccally if bleeding &ge;2 pads/hour for 2 hours (seek medical care if bleeding does not decrease within an hour).</li>
+        <li><strong>Ibuprofen 400 mg, #30</strong> — 1 tablet PO q6h PRN pain</li>
+        <li><strong>Acetaminophen 500 mg, #60</strong> — 2 tablets PO q6h PRN pain</li>
+        <li><strong>Ondansetron 4 mg ODT, #15</strong> — 1 tablet PO q6h PRN nausea</li>
+      </ul>
+      <div class="notebox">Timing of misoprostol is up to the patient — side effects (vomiting, diarrhea, bleeding) mean many prefer to take it at home with easy access to a toilet.</div>`,
+    orders: MED_RX,
+    extras: COUNSELING + DISCHARGE + POSTTX
+  },
+
+  procedural: {
+    crumb: "Procedural",
+    endpoint: true,
+    banner: "Procedural management: uterine aspiration",
+    body: `<p>Arrange uterine aspiration (almost 100% effective same day). If an IUD is in place, it can be removed at the time of the procedure. Discharge with standard instructions.</p>`,
+    extras: COUNSELING + DISCHARGE + POSTTX
+  }
+};
+
+/* ---------- engine ---------- */
+
+let history = [];
+let current = "start";
+
+function render() {
+  const s = steps[current];
+  const card = document.getElementById("card");
+  let html = "";
+
+  if (s.endpoint) {
+    html += `<div class="endpoint-banner${s.urgent ? " urgent" : ""}">${s.banner}</div>`;
+    html += `<div class="body">${s.body || ""}</div>`;
+    if (s.orders) {
+      html += `<p style="margin-bottom:4px;"><strong>Order summary</strong> (copy into EHR):</p>`;
+      html += `<div class="orders" id="ordertext">${s.orders}</div>`;
+      html += `<button class="copybtn" onclick="copyOrders(this)">Copy orders</button>`;
+    }
+    if (s.extras) html += `<div style="margin-top:14px;">${s.extras}</div>`;
+  } else {
+    html += `<h2>${s.title}</h2>`;
+    if (s.body) html += `<div class="body">${s.body}</div>`;
+    if (s.pathcards) {
+      html += `<div class="pathcards">`;
+      for (const p of s.pathcards) {
+        html += `<div class="pathcard">
+          <h3>${p.name}</h3>
+          <div style="font-size:12px;color:#6b6478;">${p.sub}</div>
+          <div class="eff">${p.eff}</div>
+          <div class="procon"><strong>Pros:</strong> ${p.pros}<br><strong>Cons:</strong> ${p.cons}</div>
+          <button class="opt" onclick="go('${p.next}')">Choose</button>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+    if (s.options) {
+      html += `<div class="options">`;
+      for (let i = 0; i < s.options.length; i++) {
+        const o = s.options[i];
+        html += `<button class="opt ${o.cls || ""}" onclick="go('${o.next}')">${o.label}${o.note ? `<span class="optnote">${o.note}</span>` : ""}</button>`;
+      }
+      html += `</div>`;
+    }
+  }
+  card.innerHTML = html;
+
+  const crumbs = document.getElementById("crumbs");
+  const trail = [...history, current].map(id => `<span>${steps[id].crumb}</span>`).join("&#8594; ");
+  crumbs.innerHTML = trail;
+
+  document.getElementById("backbtn").style.visibility = history.length ? "visible" : "hidden";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function go(next) {
+  history.push(current);
+  current = next;
+  render();
+}
+
+function goBack() {
+  if (history.length) {
+    current = history.pop();
+    render();
+  }
+}
+
+function restart() {
+  history = [];
+  current = "start";
+  render();
+}
+
+function copyOrders(btn) {
+  const text = document.getElementById("ordertext").innerText;
+  const done = () => {
+    btn.textContent = "Copied ✓";
+    btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = "Copy orders"; btn.classList.remove("copied"); }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+
+function fallbackCopy(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); done(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+render();
+</script>
+</body>
+</html>
